@@ -737,6 +737,7 @@ class Client(object):
         does not reply a PONG back a number of times, it will close the connection
         sending an `-ERR 'Stale Connection'` error.
         """
+        logger.warning('nats_client: received a ping!')
         yield self.send_command(PONG_PROTO)
 
     @tornado.gen.coroutine
