@@ -23,6 +23,7 @@ import tornado.escape
 import tornado.gen
 import tornado.ioloop
 import tornado.queues
+import traceback
 
 from random import shuffle
 from urlparse import urlparse
@@ -1102,6 +1103,7 @@ class Client(object):
         """
         Stores the last received error from the server and dispatches the error callback.
         """
+        print 'nats_client: Received error: ', err
         self.stats['errors_received'] += 1
 
         if err == "'Authorization Violation'":
@@ -1160,6 +1162,7 @@ class Client(object):
             except tornado.iostream.StreamClosedError as e:
                 self._err = e
                 if self._error_cb is not None and not self.is_reconnecting and not self.is_closed:
+                    traceback.print_stack()
                     self._error_cb(e)
                 break
 
@@ -1189,6 +1192,7 @@ class Client(object):
                     self._pending, pending = [], self._pending
                     self._pending_size, pending_size = 0, self._pending_size
                     yield self.io.write(cmds)
+                    print 'nats_client: Actually wrote to socket'
             except tornado.iostream.StreamBufferFullError:
                 # Acumulate as pending data size and flush when possible.
                 self._pending = pending + self._pending
@@ -1198,6 +1202,7 @@ class Client(object):
                 self._pending_size += pending_size
                 self._err = e
                 if self._error_cb is not None and not self.is_reconnecting:
+                    traceback.print_stack()
                     self._error_cb(e)
                 yield self._unbind()
 
