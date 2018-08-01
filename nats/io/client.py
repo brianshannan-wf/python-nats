@@ -1196,9 +1196,8 @@ class Client(object):
                     # Reset pending queue and store tmp in case write fails
                     self._pending, pending = [], self._pending
                     self._pending_size, pending_size = 0, self._pending_size
-                    logger.warning('nats_client: Trying to write to socket')
+                    logger.warning('nats_client: flush data: {}'.format(cmds))
                     yield self.io.write(cmds)
-                    logger.warning('nats_client: Actually wrote to socket')
             except tornado.iostream.StreamBufferFullError:
                 # Acumulate as pending data size and flush when possible.
                 self._pending = pending + self._pending
