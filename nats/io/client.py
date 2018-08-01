@@ -24,6 +24,7 @@ import tornado.gen
 import tornado.ioloop
 import tornado.queues
 import traceback
+import logging
 
 from random import shuffle
 from urlparse import urlparse
@@ -32,6 +33,8 @@ from nats import __lang__, __version__
 from nats.io.errors import *
 from nats.io.nuid import NUID
 from nats.protocol.parser import *
+
+logger = logging.getLogger(__name__)
 
 CONNECT_PROTO = b'{0} {1}{2}'
 PUB_PROTO = b'{0} {1} {2} {3} {4}{5}{6}'
@@ -1103,7 +1106,7 @@ class Client(object):
         """
         Stores the last received error from the server and dispatches the error callback.
         """
-        print 'nats_client: Received error: ', err
+        logger.error('nats_client: Received error: {}'.format(err))
         self.stats['errors_received'] += 1
 
         if err == "'Authorization Violation'":
@@ -1162,7 +1165,8 @@ class Client(object):
             except tornado.iostream.StreamClosedError as e:
                 self._err = e
                 if self._error_cb is not None and not self.is_reconnecting and not self.is_closed:
-                    traceback.print_stack()
+                    s = traceback.format_stack()
+                    logger.error("_read_loop error: {}".format(s))
                     self._error_cb(e)
                 break
 
@@ -1191,8 +1195,9 @@ class Client(object):
                     # Reset pending queue and store tmp in case write fails
                     self._pending, pending = [], self._pending
                     self._pending_size, pending_size = 0, self._pending_size
+                    logger.warning('nats_client: Trying to write to socket')
                     yield self.io.write(cmds)
-                    print 'nats_client: Actually wrote to socket'
+                    logger.warning('nats_client: Actually wrote to socket')
             except tornado.iostream.StreamBufferFullError:
                 # Acumulate as pending data size and flush when possible.
                 self._pending = pending + self._pending
@@ -1202,7 +1207,7 @@ class Client(object):
                 self._pending_size += pending_size
                 self._err = e
                 if self._error_cb is not None and not self.is_reconnecting:
-                    traceback.print_stack()
+                    s = traceback.format_stack("_flusher_loop error: {}", s)
                     self._error_cb(e)
                 yield self._unbind()
 
